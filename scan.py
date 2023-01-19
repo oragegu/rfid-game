@@ -34,10 +34,11 @@ def show_first_read_tag(rx):
         receiver.write(b'01464606070D')
         sleep(1)
         receiver.flushInput()
+        #return tag_code
 
 def RSSI(rx):
     #bytes_data = [0x01,add_h,add_l,0x02,0x46,0x44, 0x30, 0x01, freq_1_h, freq_1_l, freq_2_h, freq_2_l, freq_3_h, freq_3_l, 0x03, 0x00, 0x0d]
-    bytes_data = [0x01,add_h,add_l,0x02,0x46,0x44, 0x30, 0x01, freq_1_h, freq_1_l, freq_2_h, freq_2_l, freq_3_h, freq_3_l, 0x03, bcc, 0x0d]
+    bytes_data = [0x01,add_h,add_l,0x02,ord('F'),ord('D'), ord('0'), 0x01, freq_1_h, freq_1_l, freq_2_h, freq_2_l, freq_3_h, freq_3_l, 0x03, bcc, 0x0d]
     # SOH <add h> <add l> STX ‘F’ ‘D’ ‘0’ <antenna> <freq 1 h> <freq 1 l>
     #<freq 2 h> <freq 2 l> <freq 3 h> <freq 3 l> ETX <bcc> CR
     # The frequency to test in MHz in the range 840 – 960
@@ -45,13 +46,16 @@ def RSSI(rx):
     receiver.write(bytes_data)
     receiver.timeout = 1
     rx = receiver.read(1024)
-    #print("printing rx")
-    #print(rx)
-    #print(":)")
-    if rx.hex() != '014646023030303030303030303003000d' and rx != 0:  # ignore empty response (when no tag scanned)  
+    # print("printing rx")
+    # print(rx)
+    # print(":)")
+    if rx.hex() != '014646023030303030303030303003000d' and len(str(rx)) > 3:  # ignore empty response (when no tag scanned)  
+        print("rx should not be empty")
+        print(len(str(rx)))
+        print(str(rx))
         tag_code = str(rx[6:11], 'utf-8')
         print(tag_code)
-        receiver.write(b'01464606070D')
+        #receiver.write(b'01464606070D')
         sleep(1)
         receiver.flushInput()
 
@@ -67,7 +71,8 @@ def Read_reflected_power(rx):
     #print("printing rx")
     #print(rx)
     #print(":)")
-    if rx.hex() != '014646023030303030303030303003000d' and rx != 0:  # ignore empty response (when no tag scanned)  
+    if rx.hex() != '014646023030303030303030303003000d':  # ignore empty response (when no tag scanned)
+        print("coucou de RRP")
         tag_code = str(rx[6:11], 'utf-8')
         print(tag_code)
         receiver.write(b'01464606070D')
@@ -79,9 +84,9 @@ def main():
     while(True):
         rx=0
         sleep(0.5)
-        #show_first_read_tag(rx)
-        #RSSI(rx)
-        Read_reflected_power(rx)
+        show_first_read_tag(rx)
+        RSSI(rx)
+        #Read_reflected_power(rx)
 
 main()
 receiver.close()
