@@ -14,17 +14,30 @@ freq_3_l = 960 & 0xff
 
 
 # Define the address of the RFID tag
-add_h = 0x46
+add_h = 0x46 # ==ord('F')
 add_l = 0x46
 
 # Define the antenna number
 antenna = 0x01
 
 # Calculate the BCC value
-bcc = add_h ^ add_l ^ ord('F') ^ ord('D') ^ ord('0') ^ antenna ^ freq_1_h ^ freq_1_l ^ freq_2_h ^ freq_2_l ^ freq_3_h ^ freq_3_l
 
-def show_first_read_tag(rx):
-    bytes_data = [0x01,add_h,add_l,0x05,0x05,0x0d] # ENQ =0x05
+SOH = 0x01
+STX = 0x02
+ETX = 0X03
+EOT = 0x04
+CR = 0x0D
+
+def checksum_bb_cmd(ptBuffer:bytes, nLength:int) -> int:
+    bChecksum = 0
+    for nCounter in range(nLength):
+        bChecksum ^= ptBuffer[nCounter]
+    if (bChecksum == SOH or bChecksum == EOT or bChecksum == CR):
+        bChecksum += 1
+    return bChecksum
+
+def show_first_read_tag():
+    bytes_data = [0x01,ord('F'),ord('F'),0x05,0x05,0x0d] # ENQ =0x05
     receiver.write(bytes_data)
     receiver.timeout = 1
     rx = receiver.read(size=39)
@@ -37,10 +50,14 @@ def show_first_read_tag(rx):
         #return tag_code
 
 def RSSI(rx):
-    #bytes_data = [0x01,add_h,add_l,0x02,0x46,0x44, 0x30, 0x01, freq_1_h, freq_1_l, freq_2_h, freq_2_l, freq_3_h, freq_3_l, 0x03, 0x00, 0x0d]
-    bytes_data = [0x01,add_h,add_l,0x02,ord('F'),ord('D'), ord('0'), 0x01, freq_1_h, freq_1_l, freq_2_h, freq_2_l, freq_3_h, freq_3_l, 0x03, bcc, 0x0d]
+    to_be_bcced = [ord('F'),ord('D'), ord('0'), antenna, freq_1_h, freq_1_l, freq_2_h, freq_2_l, freq_3_h, freq_3_l]
+    bcc = checksum_bb_cmd(to_be_bcced, len(to_be_bcced))
+    #bcc = ord('F')^ord('D')^ord('0')^antenna^freq_1_h^freq_1_l^freq_2_h^freq_2_l^freq_3_h^freq_3_l
+    print(bcc)
+    bytes_data = [0x01,add_h,add_l,0x02,ord('F'),ord('D'), ord('0'), antenna, freq_1_h, freq_1_l, freq_2_h, freq_2_l, freq_3_h, freq_3_l, 0x03, bcc, 0x0d]
+    # bytes_data = [0x01,add_h,add_l,0x02,0x46,0x44, 0x30, 0x01, freq_1_h, freq_1_l, freq_2_h, freq_2_l, freq_3_h, freq_3_l, 0x03, 0x00, 0x0d]
     # SOH <add h> <add l> STX ‘F’ ‘D’ ‘0’ <antenna> <freq 1 h> <freq 1 l>
-    #<freq 2 h> <freq 2 l> <freq 3 h> <freq 3 l> ETX <bcc> CR
+    # <freq 2 h> <freq 2 l> <freq 3 h> <freq 3 l> ETX <bcc> CR
     # The frequency to test in MHz in the range 840 – 960
     # MHz. 3-bytes ASCII encoded value
     receiver.write(bytes_data)
@@ -55,12 +72,14 @@ def RSSI(rx):
         print(str(rx))
         tag_code = str(rx[6:11], 'utf-8')
         print(tag_code)
-        #receiver.write(b'01464606070D')
+        receiver.write(b'01464606070D')
         sleep(1)
         receiver.flushInput()
 
 def Read_reflected_power(rx):
-    bytes_data = [0x01,add_h,add_l,0x02,ord('F'),ord('E'), ord('0'), 0x01, freq_1_h, freq_1_l, freq_2_h, freq_2_l, freq_3_h, freq_3_l, 0x03, bcc, 0x0d]
+    to_be_bcced = [ord('F'),ord('E'), ord('0'), antenna, freq_1_h, freq_1_l, freq_2_h, freq_2_l, freq_3_h, freq_3_l]
+    bcc = checksum_bb_cmd(to_be_bcced, len(to_be_bcced))
+    bytes_data = [0x01,add_h,add_l,0x02,ord('F'),ord('E'), ord('0'), antenna, freq_1_h, freq_1_l, freq_2_h, freq_2_l, freq_3_h, freq_3_l, 0x03, bcc, 0x0d]
     # SOH <add h> <add l> STX ‘F’ ‘D’ ‘0’ <antenna> <freq 1 h> <freq 1 l>
     #<freq 2 h> <freq 2 l> <freq 3 h> <freq 3 l> ETX <bcc> CR
     # The frequency to test in MHz in the range 840 – 960
@@ -71,7 +90,7 @@ def Read_reflected_power(rx):
     #print("printing rx")
     #print(rx)
     #print(":)")
-    if rx.hex() != '014646023030303030303030303003000d':  # ignore empty response (when no tag scanned)
+    if rx.hex() != '014646023030303030303030303003000d' and len(str(rx)) > 3:  # ignore empty response (when no tag scanned)
         print("coucou de RRP")
         tag_code = str(rx[6:11], 'utf-8')
         print(tag_code)
@@ -80,11 +99,10 @@ def Read_reflected_power(rx):
         receiver.flushInput()
 
 def main():
-   
     while(True):
         rx=0
         sleep(0.5)
-        show_first_read_tag(rx)
+        show_first_read_tag()
         RSSI(rx)
         #Read_reflected_power(rx)
 
