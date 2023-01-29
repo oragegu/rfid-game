@@ -5,14 +5,17 @@ receiver = serial.Serial('/dev/ttyACM0', 19200)
 #receiver = serial.Serial('/dev/ttyUSB3', 115200)
 #receiver = serial.Serial('/dev/ttyUSB0', 19200)
 
-# Define the frequency range to EU standards
-freq_1_h = 0x03
-freq_1_l = 0xE8
+# Define the frequency range to EU standards <-doesn't work
+freq_1_h = (864 >> 8) & 0xff
+freq_1_l =  864 & 0xff
 freq_2_h = (865 >> 8) & 0xff
-freq_2_l = 865 & 0xff
+freq_2_l =  865 & 0xff
 freq_3_h = (868 >> 8) & 0xff
-freq_3_l = 868 & 0xff
+freq_3_l =  868 & 0xff 
 
+#Define channels for ETSI
+channel_h = 0x01
+channel_l = 0x0A
 
 # Define the address of the RFID tag
 add_h = 0x46 # ==ord('F')
@@ -42,6 +45,7 @@ SYN = 0x16
     CR (Carriage Return) - typically used to indicate the end of a line of text and the beginning of a new one.
     EOT (End of Transmission) - typically used to indicate the end of a message or transmission.
 '''
+
 def translate_ascii(s):
     s=str(s)
     wrd=""
@@ -78,7 +82,7 @@ def order(orders, header=[SOH,add_h,add_l,STX],size=26,prt=True,check=True):
     ack_message = [SOH,add_h,add_l,ACK]
     ack_message += [checksum_bb_cmd([SOH,add_h,add_l,ACK],4), CR]
     receiver.write(ack_message)
-    receiver.flushInput()
+    receiver.reset_input_buffer() #flushInput disapeared version 3
     return(rx)
 
 def split_rx(rx, text="answer",skip=0,split="\\"):
@@ -95,27 +99,18 @@ def split_rx(rx, text="answer",skip=0,split="\\"):
     return (text+" not even a str")
 
 def check_device():
-    #device serial number
-    #SOH <add h> <add l> STX ‘2’ ‘A’ ‘0’ ‘1’ ETX <bcc> CR
     bytes_data = [SOH,add_h,add_l,STX]+[ord('2'),ord('A'),ord('0'),ord('1'),ETX]
     bcc = checksum_bb_cmd(bytes_data, len(bytes_data))
     bytes_data += [bcc,CR]
-    #print(bytes_data)
     receiver.write(bytes_data)
     receiver.timeout = 1
-    rx = receiver.read(size=8*(len(bytes_data)+26))
-    #print("rx.hex():"+rx.hex()) #014646023241303132313935313534323030343803730d
-    #print("2str(rx):"+str(rx)) #b'\x01FF\x022A01219515420048\x03s\r'
-    #print("2str(rx,utf8):"+str(rx, 'utf-8')) #FF2A01219515420048s
-    #SOH <add h> <add l> STX ‘2’ ‘A’ ‘0’ ‘1’ <sn 1 h> <sn 1 l> ...
-    # ...<sn i h> <sn i l> ...<s n 6 h> <sn 6 l> ETX <bcc> CR
-    #device is 219515420048 on back of box 
+    rx = receiver.read(size=8*(len(bytes_data)+26)) #b'\x01FF\x022A01219515420048\x03s\r'
     dev=str(rx).split("\\")[2]
-    print("device #",dev[7:len(dev)])
+    print("device #",dev[7:len(dev)]) 
     ack_message = [SOH,add_h,add_l,ACK]
     ack_message += [checksum_bb_cmd([SOH,add_h,add_l,ACK],4), CR]
     receiver.write(ack_message)
-    receiver.flushInput()
+    receiver.reset_input_buffer()
     
 def show_first_read_tag():
     bytes_data = [SOH,ord('F'),ord('F'),ENQ,ENQ,CR] # ENQ =0x05
@@ -128,11 +123,11 @@ def show_first_read_tag():
         print("show_first_read_tag: " + tag_code)
         #receiver.write(b'01464606070D') #(SOH,F,F,ACK,bcc=0x07,CR)
         #sleep(0.1)
-        #receiver.flushInput()
+        #receiver.reset_input_buffer()
         ack_message = [SOH,add_h,add_l,ACK]
         ack_message += [checksum_bb_cmd([SOH,add_h,add_l,ACK],4), CR]
         receiver.write(ack_message)
-    receiver.flushInput()
+    receiver.reset_input_buffer()
     return tag_code
 
 def RSSI():
@@ -176,7 +171,7 @@ def RSSI():
         ack_message = [SOH,add_h,add_l,ACK]
         ack_message += [checksum_bb_cmd([SOH,add_h,add_l,ACK],4), CR]
         receiver.write(ack_message)
-    receiver.flushInput()
+    receiver.reset_input_buffer()
     return rssi
 
 def Read_reflected_power():
@@ -199,7 +194,7 @@ def Read_reflected_power():
         print("Read_reflected_power tag code: "+tag_code)
         receiver.write(b'01464606070D')
         sleep(1)
-        receiver.flushInput()
+        receiver.reset_input_buffer()
 
 def main():
     x=0
@@ -210,29 +205,68 @@ def main():
     print("firmware: "+ translate_ascii(split_rx(rx,skip=5))) #added an hexadec->char conv
     
     #now for temperature:
-    rx=order([ord('3'),ord('A'),ETX],prt=True) 
-    print("temp: "+ split_rx(rx,skip=5)) #
-    '''SOH <add h> <add l> STX ‘3’ ‘A’ <temp 1 h> <temp 1 l> <temp 2 h>
-<temp 2 l> ETX <bcc> CR'''
+    rx=order([ord('3'),ord('A'),ETX],prt=False) 
+    print("temp: "+ str( int(split_rx(rx,skip=5)[0:2]) + 0.125*int(split_rx(rx,skip=5)[2],16))+ "°C") #
 
-    #test of a RF function
-    '''SOH <add h> <add l> STX ‘D’ ‘A’ ‘0’ <antenna> <channel h> <channel
-l> ETX <bcc> CR'''
-    #ETSI channels 0x01 and 0x0A
-    rx=order([ord('D'),ord('A'),ord('0'),antenna,0x01,0x0A,ETX]) #
-    print("RF: "+ split_rx(rx)) #
-    '''SOH <add h> <add l> STX ‘D’ ‘A’ ‘0’ ‘0’ <power h> <power l> ETX <bcc>
-CR'''
-#bytes_data = [SOH,ord('F'),ord('F'),ENQ,ENQ,CR] # ENQ =0x05
-#    rx=order(header=[SOH], orders=[ord('F'),ord('F'),ENQ,ENQ],check=False) to retest with a tag around
-    rx=order(orders=[ord('F'),ord('F'),ENQ,ENQ,ETX]) #this makes a NAK
-    print("tag: "+ split_rx(rx)) #
-    while(x < 3):
+    #status reading ‘3’ ‘6’ ETX
+    rx=order([ord('3'),ord('6'),ETX],prt=False) 
+    print("status: "+ translate_ascii(split_rx(rx,skip=5))) 
+    
+    #read  general RAM parametters
+    rx=order([ord('2'),ord('A'),ETX],prt=False,size=48) 
+    print("parametters: "+ split_rx(rx,skip=0))
+    #SOH <add h> <add l> STX '3' 'C' <page h> <page l> ETX <bcc> CR
+    
+    #read RAM config parameters - 14 if configuration page is 0x80 ... 0x87
+    rx=order([ord('3'),ord('C'),0x01,0x87,ETX],prt=True,size=108) 
+    print("RAM config pp 1-7: "+ split_rx(rx,skip=0))
+    
+    #read ROM config parameters - 14 if configuration page is 0x80 ... 0x87
+    rx=order([ord('3'),ord('E'),0xC0,0xCF,ETX],prt=True,size=108) 
+    print("ROM config pp 1-7: "+ split_rx(rx,skip=0))
+    
+
+    
+    while(x < 2):
         rx=0
-#        tag=""
+        tag=""
         sleep(0.5)
- #       tag=show_first_read_tag()
-        #print("print tag; "+tag)
+        #adaptation of the show next tag order
+        rx=order(header=[SOH], orders=[ord('F'),ord('F'),ENQ,ENQ],check=False)# works
+        #rx=order(orders=[ord('F'),ord('F'),ENQ,ENQ,ETX]) #though properly written this makes a NAK
+        print("tag: "+ split_rx(rx)) #
+        
+        #test of a RF power function p40
+        #ETSI channels h: 0x01 and l: 0x0A
+        rx=order([ord('D'),ord('A'),ord('0'),antenna,channel_h,channel_l,ETX],prt=False) #
+        print("RF power: "+ split_rx(rx)) #
+        '''tag: SOH <add h> <add l> STX ‘D’ ‘A’ ‘0’ ‘0’ <power h> <power l> ETX <bcc> CR
+        no tag: SOH <add h> <add l> STX ‘D’ ‘A’ ‘0’ ‘1’ ETX <bcc> CR'''
+
+        #RF sensitivity
+        '''SOH <add h> <add l> STX ‘D’ ‘B’ ‘0’ <antenna> <channel h> <channel l> ETX <bcc> CR'''
+        rx=order([ord('D'),ord('B'),ord('0'),antenna,channel_h,channel_l,ETX],prt=True) #
+        print("RF sensitivity: "+ split_rx(rx)) #
+        '''tag: SOH <add h> <add l> STX ‘D’ ‘B’ ‘0’ ‘0’ <sens h> <sens l> ETX <bcc> CR'''       
+
+        #Reflected power
+        '''SOH <add h> <add l> STX ‘F’ ‘E’ ‘0’ <antenna> <freq 1 h> <freq 1 l>
+            <freq 2 h> <freq 2 l> <freq 3 h> <freq 3 l> ETX <bcc> CR'''
+        rx=order([ord('F'),ord('E'),ord('0'),antenna,freq_1_h,freq_1_l,freq_2_h,freq_2_l,freq_3_h,freq_3_l,ETX],prt=True) #
+        print("Reflected power: "+ split_rx(rx)) #
+        '''SOH <add h> <add l> STX ‘F’ ‘E’ <I-ch h> <Ich l> <Qch h> <Qch l> <G h> <G l>
+            ETX <bcc> CR'''       
+
+        #RSSI power
+        '''SOH <add h> <add l> STX ‘F’ ‘D’ ‘0’ <antenna> <freq 1 h> <freq 1 l>
+            <freq 2 h> <freq 2 l> <freq 3 h> <freq 3 l> ETX <bcc> CR'''
+        rx=order([ord('F'),ord('D'),ord('0'),antenna,freq_1_h,freq_1_l,freq_2_h,freq_2_l,freq_3_h,freq_3_l,ETX],prt=True) #
+        print("RSSI power: "+ split_rx(rx)) #
+        '''SOH <add h> <add l> STX ‘F’ ‘D’ <I-ch h> <Ich l> <Qch h> <Qch l> <G h> <G l>
+            ETX <bcc> CR'''  
+
+#        tag=show_first_read_tag()
+ #       print("print tag; "+tag)
         #print("length of tag")
   #      length = len(str(tag))
         #print(length)
@@ -245,7 +279,8 @@ CR'''
         print("in while loop "+ str(x))
         #receiver.write(b'01464606070D')
         #sleep(1)
-       # receiver.flushInput()
+       # receiver.reset_input_buffer()
         x+=1
 main()
 receiver.close()
+exit
