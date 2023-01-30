@@ -257,7 +257,11 @@ def main():
         
         #RF activation
         rx=order([ord('3'),ord('9'),ETX],prt=False)
-        print("RF activation response: "+ split_rx(rx,skip=0)) 
+        print("RF activation response: "+ split_rx(rx,skip=0))
+
+        #Antennas Auto-tuning
+        rx=order([ord('D'),ord('4'),ETX],prt=False)
+        print("autotuning response: "+ split_rx(rx,skip=0))
 
         #RF sensitivity
         '''SOH <add h> <add l> STX ‘D’ ‘B’ ‘0’ <antenna> <channel h> <channel l> ETX <bcc> CR'''
