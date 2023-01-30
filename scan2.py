@@ -215,7 +215,7 @@ def main():
     
     #now for temperature:
     rx=order([ord('3'),ord('A'),ETX],prt=False) 
-    print("temp: "+ str( int(split_rx(rx,skip=5)[0:2]) + 0.125*int(split_rx(rx,skip=5)[2],16))+ "°C") #
+    print("temp: "+ str(float(split_rx(rx,skip=5)[0:1]) + 0.125*int(split_rx(rx,skip=5)[2],16))+ "°C") #
 
     #status reading ‘3’ ‘6’ ETX
     rx=order([ord('3'),ord('6'),ETX],prt=False) 
@@ -227,14 +227,12 @@ def main():
     #SOH <add h> <add l> STX '3' 'C' <page h> <page l> ETX <bcc> CR
     
     #read RAM config parameters - 14 if configuration page is 0x80 ... 0x87
-    rx=order([ord('3'),ord('C'),0x01,0x87,ETX],prt=True,size=108) 
+    rx=order([ord('3'),ord('C'),0x01,0x87,ETX],prt=False,size=108) 
     print("RAM config pp 1-7: "+ split_rx(rx,skip=0))
     
     #read ROM config parameters - 14 if configuration page is 0x80 ... 0x87
-    rx=order([ord('3'),ord('E'),0xC0,0xCF,ETX],prt=True,size=108) 
+    rx=order([ord('3'),ord('E'),0xC0,0xCF,ETX],prt=False,size=108) 
     print("ROM config pp 1-7: "+ split_rx(rx,skip=0))
-    
-
     
     while(x < 2):
         rx=0
@@ -244,6 +242,10 @@ def main():
         rx=order(header=[SOH], orders=[ord('F'),ord('F'),ENQ,ENQ],check=False)# works
         #rx=order(orders=[ord('F'),ord('F'),ENQ,ENQ,ETX]) #though properly written this makes a NAK
         print("tag: "+ split_rx(rx)) #
+        #b'\x01FF\x02 3000 20 04 23 00 00 00 00 00 00 00 04 23 624D 01 \x03t\r'
+        ack_message = [SOH,add_h,add_l,ACK]
+        ack_message += [checksum_bb_cmd([SOH,add_h,add_l,ACK],4), CR]
+        receiver.write(ack_message)
         
         #test of a RF power function p40
         #ETSI channels h: 0x01 and l: 0x0A
@@ -254,14 +256,14 @@ def main():
 
         #RF sensitivity
         '''SOH <add h> <add l> STX ‘D’ ‘B’ ‘0’ <antenna> <channel h> <channel l> ETX <bcc> CR'''
-        rx=order([ord('D'),ord('B'),ord('0'),antenna,channel_h,channel_l,ETX],prt=True) #
+        rx=order([ord('D'),ord('B'),ord('0'),antenna,channel_h,channel_l,ETX],prt=False) #
         print("RF sensitivity: "+ split_rx(rx)) #
         '''tag: SOH <add h> <add l> STX ‘D’ ‘B’ ‘0’ ‘0’ <sens h> <sens l> ETX <bcc> CR'''       
 
         #Reflected power
         '''SOH <add h> <add l> STX ‘F’ ‘E’ ‘0’ <antenna> <freq 1 h> <freq 1 l>
             <freq 2 h> <freq 2 l> <freq 3 h> <freq 3 l> ETX <bcc> CR'''
-        rx=order([ord('F'),ord('E'),ord('0'),antenna,freq_1_h,freq_1_l,freq_2_h,freq_2_l,freq_3_h,freq_3_l,ETX],prt=True) #
+        rx=order([ord('F'),ord('E'),ord('0'),antenna,freq_1_h,freq_1_l,freq_2_h,freq_2_l,freq_3_h,freq_3_l,ETX],prt=False) #
         print("Reflected power: "+ split_rx(rx)) #
         '''SOH <add h> <add l> STX ‘F’ ‘E’ <I-ch h> <Ich l> <Qch h> <Qch l> <G h> <G l>
             ETX <bcc> CR'''       
@@ -290,8 +292,8 @@ def main():
         #sleep(1)
        # receiver.reset_input_buffer()
         x+=1
-        receiver.close()
-        #exit
-#main()
+        
+main()
 
-
+receiver.close()
+exit
