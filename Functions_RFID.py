@@ -10,7 +10,7 @@ write either:
     'exit'
     'calibrate'
     'hide and seek'
-    '1-2-3 soleil'
+    'soleil'
 """
 def capture():
     tag=''
@@ -32,10 +32,20 @@ def play_sound():
     #find help online for this one
     print("")
 
+def load_players(players_textfile="players.txt"):
+    try:
+        with open(players_textfile, "r") as file:
+            file_content = file.read()
+            players_list = [item.strip() for item in file_content.split(",")]
+    except FileNotFoundError:
+        with open(players_textfile, 'w') as fp:
+            players_list=[]
+    return players_list
+    
 def calibrate(nbplayers:int):
     #add prints here for prompts
-    players=['','']
-    for i in range(1,nbplayers):
+    players=[]
+    for i in range(1,nbplayers+1):
         pname="player #"+str(i)
         print("player #"+str(i)+", please write your name")
         b = input("$>")
@@ -44,7 +54,11 @@ def calibrate(nbplayers:int):
         print( pname, " please pass your tag in front of the antenna shortly")
         tag = capture()
         players.append([pname,tag])
-        i+=1
+        with open('players.txt', 'w') as fp:
+            for item in players:
+            # write each item on a new line
+                fp.write("%s\n" % item)
+                
     return players
 
 def hide_and_seek(players):
@@ -71,6 +85,8 @@ def one_two_three_sun(players):
         caught.append(tag)
 
 print(welcome_message)
+players=load_players()
+print(players)
 while ans != 'exit':
     a = input("$>")
     a = a.split(" ")
@@ -84,5 +100,6 @@ while ans != 'exit':
             
     if ans == 'hide and seek':
         hide_and_seek(players)
-    if ans == '1-2-3 soleil':
+    if ans == 'soleil':
         one_two_three_sun(players)
+    print(welcome_message)
