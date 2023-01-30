@@ -225,6 +225,7 @@ def main():
     rx=order([ord('2'),ord('A'),ETX],prt=False,size=48) 
     print("parametters: "+ split_rx(rx,skip=0))
     #SOH <add h> <add l> STX '3' 'C' <page h> <page l> ETX <bcc> CR
+
     
     #read RAM config parameters - 14 if configuration page is 0x80 ... 0x87
     rx=order([ord('3'),ord('C'),0x01,0x87,ETX],prt=False,size=108) 
@@ -253,6 +254,10 @@ def main():
         print("RF power: "+ split_rx(rx)) #
         '''tag: SOH <add h> <add l> STX ‘D’ ‘A’ ‘0’ ‘0’ <power h> <power l> ETX <bcc> CR
         no tag: SOH <add h> <add l> STX ‘D’ ‘A’ ‘0’ ‘1’ ETX <bcc> CR'''
+        
+        #RF activation
+        rx=order([ord('3'),ord('9'),ETX],prt=False)
+        print("RF activation response: "+ split_rx(rx,skip=0)) 
 
         #RF sensitivity
         '''SOH <add h> <add l> STX ‘D’ ‘B’ ‘0’ <antenna> <channel h> <channel l> ETX <bcc> CR'''
