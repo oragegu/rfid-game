@@ -130,6 +130,15 @@ def show_first_read_tag():
     receiver.reset_input_buffer()
     return tag_code
 
+def register_x_tags(x: int):
+    i=0    
+    while(i<x):
+        rx=order(header=[SOH], orders=[ord('F'),ord('F'),ENQ,ENQ],check=False)# works
+        print("tag: "+ split_rx(rx))
+    return rx
+
+
+
 def RSSI():
     #to send:
     #SOH <add h> <add l> STX ‘F’ ‘D’ ‘0’ <antenna> <freq 1 h> <freq 1 l>
@@ -281,6 +290,8 @@ def main():
         #sleep(1)
        # receiver.reset_input_buffer()
         x+=1
-main()
-receiver.close()
-exit
+        receiver.close()
+        #exit
+#main()
+
+
