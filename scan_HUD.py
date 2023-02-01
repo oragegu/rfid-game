@@ -22,7 +22,7 @@ def capture():
 #     return tag
 
 def generate_random_Pr():
-    return random.uniform(0.05, 0.0000005)
+    return random.uniform(8.91*10**-2, 8.91*10**-6)
 
 
 def evaluate_distance(Pr,Pt,Gr,Gt,freq,eps_r=1,mu_r=1):
@@ -80,9 +80,10 @@ def hide_and_seek(players):
         Gr = 1.64
         Gt = 7.07
         freq = 866.6*10**6
-        if (evaluate_distance(Pr,Pt,Gr,Gt,freq)<1): #complete here    
-            caught.append(tag)
-            print(evaluate_distance(Pr,Pt,Gr,Gt,freq))
+        if (evaluate_distance(Pr,Pt,Gr,Gt,freq)<1): #complete here  
+            print(evaluate_distance(Pr,Pt,Gr,Gt,freq))  
+            print(caught.append(tag)) 
+            return caught.append(tag)
 
 def one_two_three_sun(players):
     print("press a key when ready to start the timer")
