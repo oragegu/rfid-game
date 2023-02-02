@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-
 import time
 import math
 import scan
@@ -9,11 +8,10 @@ import random
 #début du main
 ans=''        
 welcome_message ="""
-write either:
-    'exit'
-    'calibrate'
-    'hide and seek'
-    'soleil'
+
+    Welcome to RFIND ME
+    our players of today:
+    
 """
 def capture():
     tag=''
@@ -48,6 +46,7 @@ def load_players(players_textfile="players.txt"):
 def calibrate(nbplayers:int):
     #add prints here for prompts
     players=[]
+    print ("Calibration for " + str(nbplayers) + " players")
     for i in range(1,nbplayers+1):
         pname="player #"+str(i)
         print("player #"+str(i)+", please write your name")
@@ -60,9 +59,16 @@ def calibrate(nbplayers:int):
         with open('players.txt', 'w') as fp:
             for item in players:
             # write each item on a new line
-                fp.write("%s\n" % item)
-                
+                fp.write("%s\n" % item)          
     return players
+
+def name_of(tag,players):
+    nam=""
+    for player in players:
+        if tag in player:
+            nam = player[0]
+            break
+    return nam
 
 def get_BB_settings():
     Pt = 1.58
@@ -70,42 +76,34 @@ def get_BB_settings():
     Gt = 7.07
     freq = 866.5*10**6
     return Pt,Gr,Gt,freq
-'''
+
 def hide_and_seek(players):
-    print("press a key when ready to start the timer")
-    b = input("$>")
+    #print("press a key when ready to start the timer")
+    print("3 seconds to hide!")
+   # b = input("$>")
     timer(3)
+    start=time.time()
+    last=start
     caught=[]
-    Pt,Gr,Gt,freq= get_BB_settings()
-    while (len(caught)<len(players)-1):
-        print("tag")
-        tag = capture()
-        print("tag passed")
-        Pr = generate_random_Pr()
-        print(Pr + " dB")
-        print(evaluate_distance(Pr,Pt,Gr,Gt,freq)+" metres")
-        if (evaluate_distance(Pr,Pt,Gr,Gt,freq)<1):    
-            caught.append(tag) 
-            print(caught)
-    return caught
-'''
-def hide_and_seek(players):
-    print("press a key when ready to start the timer")
-    b = input("$>")
-    timer(3)
-    caught=[]
-    while (len(caught)<(len(players)-1)):
+    while (len(caught)<(len(players))):
         tag=capture()
         Pr = generate_random_Pr()
         Pt = 1.58
         Gr = 1.64
         Gt = 7.07
         freq = 866.6*10**6
-        if (evaluate_distance(Pr,Pt,Gr,Gt,freq)<1): #complete here    
+        if (evaluate_distance(Pr,Pt,Gr,Gt,freq)<1):   
             if(tag not in caught):
                 caught.append(tag)
-            print(str(evaluate_distance(Pr,Pt,Gr,Gt,freq)) + " metres")
-    print(caught)
+                print(name_of(tag,players)+  " I found you !!!")
+            if ((time.time() - last) > 2):
+                print(str(round(evaluate_distance(Pr,Pt,Gr,Gt,freq),2)) + " metres")
+                last=time.time()
+        if (time.time()-start)>60:
+            break
+    print("caught list:")
+    for tag in caught:
+        print(name_of(tag,players)+ " tag:" + tag)
     return(caught)
             
 def one_two_three_sun(players):
@@ -141,7 +139,11 @@ def on_one_two_three_sun():
 ##game launch
 print(welcome_message)
 players=load_players()
-print(players)
+players = [x.split("'") for x in ''.join(players).split('\n')]
+players = [[x[1], x[3]] for x in players]
+#print(players)
+for player in players:
+   print(player[0] + " with tag: " + player[1])
 root = tk.Tk()
 root.title("RFID Game Console")
 

@@ -250,18 +250,18 @@ def main():
         
         #test of a RF power function p40
         #ETSI channels h: 0x01 and l: 0x0A
-        #rx=order([ord('D'),ord('A'),ord('0'),antenna,channel_h,channel_l,ETX],prt=False) #
-        #print("RF power: "+ split_rx(rx)) #
+        rx=order([ord('D'),ord('A'),ord('0'),antenna,channel_h,channel_l,ETX],prt=False) #
+        print("RF power: "+ split_rx(rx)) #
         '''tag: SOH <add h> <add l> STX ‘D’ ‘A’ ‘0’ ‘0’ <power h> <power l> ETX <bcc> CR
         no tag: SOH <add h> <add l> STX ‘D’ ‘A’ ‘0’ ‘1’ ETX <bcc> CR'''
         
         #RF activation
-       # rx=order([ord('3'),ord('9'),ETX],prt=False)
-      #  print("RF activation response: "+ split_rx(rx,skip=0))
+        rx=order([ord('3'),ord('9'),ETX],prt=False)
+        print("RF activation response: "+ split_rx(rx,skip=0))
 
         #Antennas Auto-tuning
-      #  rx=order([ord('D'),ord('4'),ETX],prt=False)
-       # print("autotuning response: "+ split_rx(rx,skip=0))
+        rx=order([ord('D'),ord('4'),ETX],prt=False)
+        print("autotuning response: "+ split_rx(rx,skip=0))
 
         #RF sensitivity
         '''SOH <add h> <add l> STX ‘D’ ‘B’ ‘0’ <antenna> <channel h> <channel l> ETX <bcc> CR'''

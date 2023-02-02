@@ -120,7 +120,7 @@ def show_first_read_tag():
     rx = receiver.read(size=39)
     if rx.hex() != '014646023030303030303030303003000d':  # ignore empty response (when no tag scanned)
         tag_code = str(rx[4:36], 'utf-8')
-        print("show_first_read_tag: " + tag_code)
+       # print("show_first_read_tag: " + tag_code)
         ack_message = [SOH,add_h,add_l,ACK]
         ack_message += [checksum_bb_cmd([SOH,add_h,add_l,ACK],4), CR]
         receiver.write(ack_message)
