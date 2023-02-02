@@ -194,6 +194,10 @@ def Read_reflected_power():
     receiver.write(bytes_data)
     receiver.timeout = 5
     rx = receiver.read(1024)
+    print("Read reflected power str(rx):"+str(rx)) #b'\x01FF\x022A01219515420048\x03s\r'
+    print("read reflected power str(rx,utf8):"+str(rx, 'utf-8')) #0102...
+    rssi=str(rx).split("\\")
+    print (str(rssi))
     #print("printing rx")
     #print(rx)
     #print(":)")
@@ -201,7 +205,16 @@ def Read_reflected_power():
         print("Read_reflected_power: coucou")
         tag_code = str(rx[6:11], 'utf-8')
         print("Read_reflected_power tag code: "+tag_code)
-        receiver.write(b'01464606070D')
+        print("rrp part should be 6x2 chars#",rssi[8:len(rssi)]) #STX = 6 chr F and D 2 we start on 9th ch
+        #rx.hex() != '014646023030303030303030303003000d' and 
+        print("rrp: rx should not be empty")
+        print("rrp len(rx): "+str(len(str(rx))))
+        print("rrp str(rx): "+str(rx))
+        ack_message = [SOH,add_h,add_l,ACK]
+        ack_message += [checksum_bb_cmd([SOH,add_h,add_l,ACK],4), CR]
+        receiver.write(ack_message)
+        #receiver.reset_input_buffer()
+        #receiver.write(b'01464606070D')
         sleep(1)
         receiver.reset_input_buffer()
 
@@ -259,6 +272,8 @@ def main():
         rx=order([ord('3'),ord('9'),ETX],prt=False)
         print("RF activation response: "+ split_rx(rx,skip=0))
 
+        sleep(1)
+        
         #Antennas Auto-tuning
         rx=order([ord('D'),ord('4'),ETX],prt=False)
         print("autotuning response: "+ split_rx(rx,skip=0))
