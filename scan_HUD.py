@@ -1,30 +1,34 @@
-#!/usr/bin/python3
-
-import time
-import math
-import scan
 import tkinter as tk
 from tkinter import messagebox
+import time
+import math
+# import scan2 as scan
 import random
-#début du main
-ans=''        
-welcome_message ="""
-write either:
-    'exit'
-    'calibrate'
-    'hide and seek'
-    'soleil'
-"""
+
+def show_first_read_tag():
+    tag = "014646023030303030303030303003000"
+    return tag + hex(random.randint(1,100))[2:].zfill(2)
+
 def capture():
     tag=''
     while (tag==''):
-        tag=scan.show_first_read_tag() 
+        tag = show_first_read_tag()
     return tag
+
+# def capture():
+#     tag = ''
+#     while (tag==''):
+#         tag=scan.show_first_read_tag()
+#     return tag
+
+def generate_random_Pr():
+    return random.uniform(8.91*10**-2, 8.91*10**-6)
+
 
 def evaluate_distance(Pr,Pt,Gr,Gt,freq,eps_r=1,mu_r=1):
     lmbda=(3*10**8)/(freq*mu_r*eps_r)
     R = (lmbda/(4*math.pi)) * math.sqrt((Pt*Gt*Gr)/Pr) 
-    return(R/(R+1))
+    return(R)
 
 def timer(n:int):
     for i in range(0,n):
@@ -46,7 +50,6 @@ def load_players(players_textfile="players.txt"):
     return players_list
     
 def calibrate(nbplayers:int):
-    #add prints here for prompts
     players=[]
     for i in range(1,nbplayers+1):
         pname="player #"+str(i)
@@ -59,55 +62,29 @@ def calibrate(nbplayers:int):
         players.append([pname,tag])
         with open('players.txt', 'w') as fp:
             for item in players:
-            # write each item on a new line
                 fp.write("%s\n" % item)
                 
     return players
 
-def get_BB_settings():
-    Pt = 1.58
-    Gr = 1.64
-    Gt = 7.07
-    freq = 866.5*10**6
-    return Pt,Gr,Gt,freq
-'''
+
+
 def hide_and_seek(players):
     print("press a key when ready to start the timer")
     b = input("$>")
     timer(3)
-    caught=[]
-    Pt,Gr,Gt,freq= get_BB_settings()
-    while (len(caught)<len(players)-1):
-        print("tag")
-        tag = capture()
-        print("tag passed")
-        Pr = generate_random_Pr()
-        print(Pr + " dB")
-        print(evaluate_distance(Pr,Pt,Gr,Gt,freq)+" metres")
-        if (evaluate_distance(Pr,Pt,Gr,Gt,freq)<1):    
-            caught.append(tag) 
-            print(caught)
-    return caught
-'''
-def hide_and_seek(players):
-    print("press a key when ready to start the timer")
-    b = input("$>")
-    timer(3)
-    caught=[]
-    while (len(caught)<(len(players)-1)):
+    caught=['','']
+    while (len(caught)<len(players)):
         tag=capture()
         Pr = generate_random_Pr()
         Pt = 1.58
         Gr = 1.64
         Gt = 7.07
         freq = 866.6*10**6
-        if (evaluate_distance(Pr,Pt,Gr,Gt,freq)<1): #complete here    
-            if(tag not in caught):
-                caught.append(tag)
-            print(str(evaluate_distance(Pr,Pt,Gr,Gt,freq)) + " metres")
-    print(caught)
-    return(caught)
-            
+        if (evaluate_distance(Pr,Pt,Gr,Gt,freq)<1): #complete here  
+            print(evaluate_distance(Pr,Pt,Gr,Gt,freq))  
+            print(caught.append(tag)) 
+            return caught.append(tag)
+
 def one_two_three_sun(players):
     print("press a key when ready to start the timer")
     b = input("$>")
@@ -117,33 +94,26 @@ def one_two_three_sun(players):
             print(i)
             timer(i)
             play_sound()
-        tag=capture() #all captures get caught
+        tag=capture()
         caught.append(tag)
 
 def on_calibrate():
     nbplayers = int(players_entry.get())
     players = calibrate(nbplayers)
     messagebox.showinfo("Info", "Players have been calibrated.")
-    return players
-
-def generate_random_Pr():
-    return random.uniform(8.91*10**-2, 8.91*10**-6)
 
 def on_hide_and_seek():
-    caught = hide_and_seek(players)
-    messagebox.showinfo("Info", "The game of hide and seek has finished.")
-    return caught
+    hide_and_seek(players)
+    messagebox.showinfo("Info", "The game of hide and seek has been finish.")
 
 def on_one_two_three_sun():
     one_two_three_sun(players)
-    messagebox.showinfo("Info", "The game of one, two, three sun has finished.")
+    messagebox.showinfo("Info", "The game of one, two, three sun has been finish.")
 
-##game launch
-print(welcome_message)
-players=load_players()
-print(players)
 root = tk.Tk()
 root.title("RFID Game Console")
+
+players = load_players()
 
 players_label = tk.Label(root, text="Number of players:")
 players_label.grid(row=0, column=0, padx=10, pady=10)
@@ -162,22 +132,3 @@ one_two_three_sun_button.grid(row=2, column=0, padx=10, pady=10, columnspan=2)
 
 root.mainloop()
 
-'''
-#reactivate this code if we can't use windows
-while ans != 'exit':
-    a = input("$>")
-    a = a.split(" ")
-    ans=a[0]  
-    if ans == 'calibrate':
-        print("how many player tags ?")
-        b = input("$>")
-        b = b.split(" ")
-        nbplayers=int(b[0])  
-        players=calibrate(nbplayers)
-            
-    if ans == 'hide and seek':
-        hide_and_seek(players)
-    if ans == 'soleil':
-        one_two_three_sun(players)
-    print(welcome_message)
-'''
